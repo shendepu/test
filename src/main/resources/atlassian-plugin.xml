@@ -1,0 +1,70 @@
+<atlassian-plugin key="${project.groupId}.${project.artifactId}" name="${project.artifactId}" plugins-version="2">
+    <plugin-info>
+        <description>${project.description}</description>
+        <version>${project.version}</version>
+        <vendor name="${project.organization.name}" url="${project.organization.url}" />
+    </plugin-info>
+
+    <!-- An simple example of customising an exisiting report - adding the admin and updated date of an issue to the template -->
+    <report key="singlelevelgroupbyextended" name="Example: Group By Report Extended" class="com.atlassian.plugins.tutorial.jira.report.SingleLevelGroupByReportExtended">
+        <description key="report.singlelevelgroupby.description">i18n description</description>
+        <resource type="velocity" name="view" location="templates/groupreport/single-groupby-report-extended.vm" />
+        <resource type="i18n" name="i18n" location="com.atlassian.plugins.tutorial.jira.report.singlelevelgroup_report" />
+        <label key="report.singlelevelgroupby.label.extended" />
+        <properties>
+            <property>
+                <key>filterid</key>
+                <name>report.singlelevelgroupby.filterId</name>
+                <description>report.singlelevelgroupby.filterId.description</description>
+                <type>select</type>
+                <values class="com.atlassian.jira.portal.SearchRequestValuesGenerator" />
+            </property>
+            <property>
+                <key>mapper</key>
+                <name>report.singlelevelgroupby.mapper</name>
+                <description>report.singlelevelgroupby.mapper.description</description>
+                <type>select</type>
+                <values class="com.atlassian.jira.issue.statistics.FilterStatisticsValuesGenerator" />
+            </property>
+        </properties>
+    </report>
+
+    <!-- An 'Issue Creation' Report - displays a histogram of issue create within a specifed project over a specified time -->
+    <report key="issuecreationreport" name="Example: Issue Creation Report" class="com.atlassian.plugins.tutorial.jira.report.CreationReport">
+        <description key="report.issuecreation.description">i18n description</description>
+        <label key="report.issuecreation.label" />
+
+        <resource type="velocity" name="view" location="templates/creationreport/issuecreation-report.vm" />
+        <resource type="i18n" name="i18n" location="com.atlassian.plugins.tutorial.jira.report.issuecreation_report" />
+
+        <properties>
+            <property>
+                <key>projectid</key>
+                <name>report.issuecreation.projectid.name</name>
+                <description>report.issuecreation.projectid.description</description>
+                <type>select</type>
+                <values class="com.atlassian.jira.portal.ProjectValuesGenerator"/>
+            </property>
+            <property>
+                <key>startDate</key>
+                <name>report.issuecreation.startdate</name>
+                <description>report.issuecreation.startdate.description</description>
+                <type>date</type>
+            </property>
+            <property>
+                <key>endDate</key>
+                <name>report.issuecreation.enddate</name>
+                <description>report.issuecreation.enddate.description</description>
+                <type>date</type>
+            </property>
+            <property>
+                <key>interval</key>
+                <name>report.issuecreation.interval</name>
+                <description>report.issuecreation.interval.description</description>
+                <type>long</type>
+                <default>3</default>
+            </property>
+        </properties>
+    </report>
+    
+</atlassian-plugin>
