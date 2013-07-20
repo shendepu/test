@@ -1,6 +1,7 @@
-package com.atlassian.plugins.tutorial.jira.report;
+package com.atlassian.plugins.tutorial.jira.reports;
 
 import com.atlassian.core.util.map.EasyMap;
+import com.atlassian.crowd.embedded.api.User;
 import com.atlassian.jira.bc.JiraServiceContext;
 import com.atlassian.jira.bc.JiraServiceContextImpl;
 import com.atlassian.jira.bc.filter.SearchRequestService;
@@ -19,25 +20,22 @@ import com.atlassian.jira.issue.statistics.StatsGroup;
 import com.atlassian.jira.issue.statistics.util.OneDimensionalDocIssueHitCollector;
 import com.atlassian.jira.plugin.report.impl.AbstractReport;
 import com.atlassian.jira.security.JiraAuthenticationContext;
+import com.atlassian.jira.util.SimpleErrorCollection;
 import com.atlassian.jira.web.FieldVisibilityManager;
 import com.atlassian.jira.web.action.ProjectActionSupport;
 import com.atlassian.jira.web.bean.FieldVisibilityBean;
 import com.atlassian.jira.web.bean.PagerFilter;
 import com.atlassian.jira.web.util.OutlookDateManager;
 import com.atlassian.util.profiling.UtilTimerStack;
-import com.opensymphony.user.User;
 import com.opensymphony.util.TextUtils;
-
 import org.apache.commons.lang.StringUtils;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.lucene.search.HitCollector;
-
+import org.apache.log4j.Logger;
+import org.apache.lucene.search.Collector;
 import java.util.Map;
 
 public class SingleLevelGroupByReportExtended extends AbstractReport
 {
-    private static Log log = LogFactory.getLog(SingleLevelGroupByReportExtended.class);
+    private static final Logger log = Logger.getLogger(SingleLevelGroupByReportExtended.class);
 
     private final SearchProvider searchProvider;
     private final JiraAuthenticationContext authenticationContext;
@@ -51,10 +49,10 @@ public class SingleLevelGroupByReportExtended extends AbstractReport
     private final OutlookDateManager outlookDateManager;
 
     public SingleLevelGroupByReportExtended(final SearchProvider searchProvider, final JiraAuthenticationContext authenticationContext,
-            final SearchRequestService searchRequestService, final IssueFactory issueFactory,
-            final CustomFieldManager customFieldManager, final IssueIndexManager issueIndexManager,
-            final SearchService searchService, final FieldVisibilityManager fieldVisibilityManager,
-            final ReaderCache readerCache, final OutlookDateManager outlookDateManager)
+                                            final SearchRequestService searchRequestService, final IssueFactory issueFactory,
+                                            final CustomFieldManager customFieldManager, final IssueIndexManager issueIndexManager,
+                                            final SearchService searchService, final FieldVisibilityManager fieldVisibilityManager,
+                                            final ReaderCache readerCache, final OutlookDateManager outlookDateManager )
     {
         this.searchProvider = searchProvider;
         this.authenticationContext = authenticationContext;
@@ -65,7 +63,7 @@ public class SingleLevelGroupByReportExtended extends AbstractReport
         this.searchService = searchService;
         this.fieldVisibilityManager = fieldVisibilityManager;
         this.readerCache = readerCache;
-        this.outlookDateManager = outlookDateManager;
+        this.outlookDateManager =  outlookDateManager;
     }
 
     public StatsGroup getOptions(SearchRequest sr, User user, StatisticsMapper mapper) throws PermissionException
@@ -89,7 +87,7 @@ public class SingleLevelGroupByReportExtended extends AbstractReport
         {
             UtilTimerStack.push("Search Count Map");
             StatsGroup statsGroup = new StatsGroup(mapper);
-            HitCollector hitCollector = new OneDimensionalDocIssueHitCollector(mapper.getDocumentConstant(), statsGroup, 
+            Collector hitCollector = new OneDimensionalDocIssueHitCollector(mapper.getDocumentConstant(), statsGroup,
                     issueIndexManager.getIssueSearcher().getIndexReader(), issueFactory,
                     fieldVisibilityManager, readerCache);
             searchProvider.searchAndSort((request != null) ? request.getQuery() : null, searcher, hitCollector, PagerFilter.getUnlimitedFilter());
@@ -108,14 +106,14 @@ public class SingleLevelGroupByReportExtended extends AbstractReport
         {
             log.error("Single Level Group By Report run without a project selected (JRA-5042): params=" + params);
             return "<span class='errMsg'>No search filter has been selected. Please "
-                   + "<a href=\"IssueNavigator.jspa?reset=Update&amp;pid="
-                   + TextUtils.htmlEncode((String) params.get("selectedProjectId"))
-                   + "\">create one</a>, and re-run this report. See also "
-                   + "<a href=\"http://jira.atlassian.com/browse/JRA-5042\">JRA-5042</a></span>";
+                    + "<a href=\"IssueNavigator.jspa?reset=Update&amp;pid="
+                    + TextUtils.htmlEncode((String) params.get("selectedProjectId"))
+                    + "\">create one</a>, and re-run this report. See also "
+                    + "<a href=\"http://jira.atlassian.com/browse/JRA-5042\">JRA-5042</a></span>";
         }
         String mapperName = (String) params.get("mapper");
         final StatisticsMapper mapper = new FilterStatisticsValuesGenerator().getStatsMapper(mapperName);
-        final JiraServiceContext ctx = new JiraServiceContextImpl(authenticationContext.getUser());
+        final JiraServiceContext ctx = new JiraServiceContextImpl(authenticationContext.getLoggedInUser());
         final SearchRequest request = searchRequestService.getFilter(ctx, new Long(filterId));
 
         final Map startingParams;
@@ -123,32 +121,54 @@ public class SingleLevelGroupByReportExtended extends AbstractReport
         {
             startingParams = EasyMap.build(
                     "action", action,
-                    "statsGroup", getOptions(request, authenticationContext.getUser(), mapper),
+                    "statsGroup", getOptions(request, authenticationContext.getLoggedInUser(), mapper),
                     "searchRequest", request,
                     "mapperType", mapperName,
                     "customFieldManager", customFieldManager,
                     "fieldVisibility", new FieldVisibilityBean(),
                     "searchService", searchService,
                     "portlet", this);
-            
-            startingParams.put("outlookDate", outlookDateManager.getOutlookDate(authenticationContext.getLocale()));
-
+            startingParams.put("outlookDate", 
+                  outlookDateManager.getOutlookDate(authenticationContext.getLocale()));
             return descriptor.getHtml("view", startingParams);
+
         }
         catch (PermissionException e)
         {
             log.error(e, e);
             return null;
         }
-
     }
 
     public void validate(ProjectActionSupport action, Map params)
     {
         super.validate(action, params);
-        if (StringUtils.isEmpty((String) params.get("filterid")))
+        String filterId = (String) params.get("filterid");
+        if (StringUtils.isEmpty(filterId))
         {
             action.addError("filterid", action.getText("report.singlelevelgroupby.filter.is.required"));
+        }
+        else
+        {
+            validateFilterId(action,filterId);
+        }
+    }
+
+    private void validateFilterId(ProjectActionSupport action, String filterId)
+    {
+        try
+        {
+            JiraServiceContextImpl serviceContext = new JiraServiceContextImpl(
+                    action.getLoggedInUser(), new SimpleErrorCollection());
+            SearchRequest searchRequest = searchRequestService.getFilter(serviceContext, new Long(filterId));
+            if (searchRequest == null)
+            {
+                action.addErrorMessage(action.getText("report.error.no.filter"));
+            }
+        }
+        catch (NumberFormatException nfe)
+        {
+            action.addError("filterId", action.getText("report.error.filter.id.not.a.number", filterId));
         }
     }
 }

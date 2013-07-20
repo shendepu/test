@@ -1,19 +1,23 @@
-package com.atlassian.plugins.tutorial.jira.report;
+package com.atlassian.plugins.tutorial.jira.reports;
+
+import com.atlassian.jira.plugin.report.impl.AbstractReport;
+import com.atlassian.jira.web.action.ProjectActionSupport;
+
 
 import com.atlassian.core.util.DateUtils;
 import com.atlassian.jira.issue.search.SearchException;
 import com.atlassian.jira.issue.search.SearchProvider;
 import com.atlassian.jira.jql.builder.JqlQueryBuilder;
-import com.atlassian.jira.plugin.report.impl.AbstractReport;
 import com.atlassian.jira.project.ProjectManager;
 import com.atlassian.jira.util.I18nHelper;
 import com.atlassian.jira.util.ParameterUtils;
-import com.atlassian.jira.web.action.ProjectActionSupport;
 import com.atlassian.jira.web.bean.I18nBean;
+
 import com.atlassian.jira.web.util.OutlookDate;
 import com.atlassian.jira.web.util.OutlookDateManager;
 import com.atlassian.query.Query;
-import com.opensymphony.user.User;
+
+import com.atlassian.crowd.embedded.api.User;
 
 import org.apache.log4j.Logger;
 
@@ -62,7 +66,7 @@ public class CreationReport extends AbstractReport
         I18nHelper i18nBean = new I18nBean(remoteUser);
 
         // Retrieve the project parameter
-        Long projectId = ParameterUtils.getLongParam(params, "projectid");
+        Long projectId = ParameterUtils.getLongParam(params, "selectedProjectId");
         // Retrieve the start and end dates and the time interval specified by the user
         Date startDate = ParameterUtils.getDateParam(params, "startDate", i18nBean.getLocale());
         Date endDate = ParameterUtils.getDateParam(params, "endDate", i18nBean.getLocale());
@@ -115,7 +119,7 @@ public class CreationReport extends AbstractReport
     {
         JqlQueryBuilder queryBuilder = JqlQueryBuilder.newBuilder();
         Query query = queryBuilder.where().createdBetween(startDate, endDate).and().project(projectId).buildQuery();
-    
+
         return searchProvider.searchCount(query, remoteUser);
     }
 
@@ -159,7 +163,7 @@ public class CreationReport extends AbstractReport
         Date startDate = ParameterUtils.getDateParam(params, "startDate", i18nBean.getLocale());
         Date endDate = ParameterUtils.getDateParam(params, "endDate", i18nBean.getLocale());
         Long interval = ParameterUtils.getLongParam(params, "interval");
-        Long projectId = ParameterUtils.getLongParam(params, "projectid");
+        Long projectId = ParameterUtils.getLongParam(params, "selectedProjectId");
 
         OutlookDate outlookDate = outlookDateManager.getOutlookDate(i18nBean.getLocale());
 
@@ -173,7 +177,7 @@ public class CreationReport extends AbstractReport
             action.addError("interval", action.getText("report.issuecreation.interval.invalid"));
 
         if (projectId == null)
-            action.addError("projectid", action.getText("report.issuecreation.projectid.invalid"));
+            action.addError("selectedProjectId", action.getText("report.issuecreation.projectid.invalid"));
 
         // The end date must be after the start date
         if (startDate != null && endDate != null && endDate.before(startDate))
