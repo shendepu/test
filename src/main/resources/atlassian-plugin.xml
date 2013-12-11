@@ -46,6 +46,29 @@
          </property>
     </properties>
   </report>
+
+    <report name="Single Level Group By Report With Filter Or Project" i18n-name-key="single-level-group-by-report-with-filter-project.name" key="single-level-group-by-report-with-filter-project" class="com.atlassian.plugins.tutorial.jira.reports.SingleLevelGroupByReportWithFilterProject">
+        <description key="single-level-group-by-report-with-filter-project.description">The Single Level Group By Report With Filter Or Project Plugin</description>
+        <resource name="view" type="velocity" location="/templates/reports/single-level-group-by-report-with-filter-project/view.vm"/>
+        <resource name="i18n" type="i18n" location="SingleLevelGroupByReportWithFilterProject"/>
+        <label key="single-level-group-by-report-with-filter-project.label"/>
+        <properties>
+            <property>
+                <key>projectOrFilterId</key>
+                <name>report.singlelevelgroupby.projectorfilterid</name>
+                <description>report.singlelevelgroupby.projectorfilterid.description</description>
+                <type>filterprojectpicker</type>
+                <i18n>false</i18n>
+            </property>
+            <property>
+                <key>mapper</key>
+                <name>report.singlelevelgroupby.mapper</name>
+                <description>report.singlelevelgroupby.mapper.description</description>
+                <type>select</type>
+                <values class="com.atlassian.jira.issue.statistics.FilterStatisticsValuesGenerator" />
+            </property>
+        </properties>
+    </report>
   <report name="Creation Report" i18n-name-key="creation-report.name" key="creation-report" class="com.atlassian.plugins.tutorial.jira.reports.CreationReport">
     <description key="creation-report.description">The Creation Report Plugin</description>
     <resource name="view" type="velocity" location="/templates/reports/creation-report/view.vm"/>
